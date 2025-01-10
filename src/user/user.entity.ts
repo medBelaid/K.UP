@@ -23,5 +23,5 @@ export class UserEntity {
   status: string;
 
   @OneToMany(() => EmailEntity, (email) => email.user)
-  emails: EmailEntity[];
+  emails?: EmailEntity[];
 }

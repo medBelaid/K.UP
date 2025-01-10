@@ -15,6 +15,15 @@ export class UserEmail implements IEmail {
 }
 
 @InputType()
+export class CreateUserEmail {
+  @Field(() => ID)
+  id: string;
+
+  @Field(() => String)
+  address: string;
+}
+
+@InputType()
 export class StringFilters {
   @IsOptional()
   @Field(() => String, { nullable: true })
