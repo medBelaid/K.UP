@@ -15,12 +15,15 @@ export class UserEmail implements IEmail {
 }
 
 @InputType()
-export class CreateUserEmail {
+export class CreateEmailUser {
   @Field(() => ID)
   id: string;
 
   @Field(() => String)
   address: string;
+
+  @Field(() => String)
+  userId: string;
 }
 
 @InputType()

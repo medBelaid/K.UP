@@ -7,8 +7,8 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Maybe } from 'graphql/jsutils/Maybe';
-import { IUser, IAddUser } from './user.interfaces';
-import { UserEmail, CreateUserEmail } from '../email/email.types';
+import { IUser, IAddUser, Status } from './user.interfaces';
+import { UserEmail, CreateEmailUser } from '../email/email.types';
 
 /**
  * Type de sortie GraphQL d'un utilisateur pour les récupérations
@@ -20,6 +20,10 @@ export class User implements IUser {
 
   @Field(() => String)
   name: string;
+
+  @MaxLength(8)
+  @Field(() => String)
+  status: Status;
 
   @Field(() => [UserEmail], { nullable: true })
   emails?: UserEmail[];
@@ -39,7 +43,11 @@ export class AddUser implements IAddUser {
   @Field(() => String)
   name: string;
 
-  @Field(() => [CreateUserEmail], { nullable: true })
+  @MaxLength(8)
+  @Field(() => String)
+  status: Status;
+
+  @Field(() => [CreateEmailUser], { nullable: true })
   emails?: UserEmail[];
 
   @IsOptional()

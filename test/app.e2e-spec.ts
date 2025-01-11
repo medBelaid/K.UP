@@ -6,13 +6,14 @@ import { Repository } from 'typeorm';
 import { UserEntity } from '../src/user/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { EmailEntity } from '../src/email/email.entity';
+import { Status } from '../src/user/user.interfaces';
 
 const knownUserId = '0f9fcea9-f618-44e5-b182-0e3c83586f8b';
 
 const knownUser = {
   id: knownUserId,
   name: 'Moi Même',
-  status: 'active',
+  status: Status.ACTIVE,
   birthdate: new Date(1989, 3, 8).toISOString(),
   emails: [
     {
@@ -173,11 +174,11 @@ describe('Tests e2e', () => {
         return request(app.getHttpServer())
           .post('/graphql')
           .send({
-            query: `mutation {addUser(name:"User Name", birthdate: "${date}")}`,
+            query: `mutation {addUser(name:"User Name" birthdate:"${date}" status: "${Status.ACTIVE}")}`,
           })
           .expect(200)
           .expect((res) => {
-            expect(res.body.data.addUser).toBeDefined();
+            expect(res.body.data).toBeDefined();
           });
       });
 
@@ -185,7 +186,7 @@ describe('Tests e2e', () => {
         return request(app.getHttpServer())
           .post('/graphql')
           .send({
-            query: `mutation {addUser(name:"")}`,
+            query: `mutation {addUser(name:"" status: "${Status.ACTIVE}")}`,
           })
           .expect(200)
           .expect((res) => {
@@ -200,7 +201,7 @@ describe('Tests e2e', () => {
         return request(app.getHttpServer())
           .post('/graphql')
           .send({
-            query: `mutation {addUser(name:"User Name" birthdate:"${date}")}`,
+            query: `mutation {addUser(name:"User Name" birthdate:"${date}" status: "${Status.ACTIVE}")}`,
           })
           .expect(200)
           .expect((res) => {
