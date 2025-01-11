@@ -11,6 +11,7 @@ export class UserEmail implements IEmail {
   @Field(() => String)
   address: string;
 
+  @Field(() => String)
   userId: string;
 }
 

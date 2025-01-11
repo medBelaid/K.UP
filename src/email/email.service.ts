@@ -48,20 +48,18 @@ export class EmailService {
     }
 
     const user = await this.usersService.get(email.userId);
-
-    // Vérifier si l'email existe déjà dans la liste des emails de l'utilisateur
-    if (user.emails.some((e) => e.id === email.id)) {
-      throw new BadRequestException(
-        "l'email existe déjà dans la liste des emails de l'utilisateur.",
-      );
-    }
-
     if (!user) {
       throw new NotFoundException("l'utilisateur n'est pas défini");
     }
     if (user?.status === Status.INACTIVE) {
       throw new BadRequestException(
         "L'utilisateur est inactif et ne peut pas être modifié.",
+      );
+    }
+    // Vérifier si l'email existe déjà dans la liste des emails de l'utilisateur
+    if (user.emails?.some((e) => e.id === email.id)) {
+      throw new BadRequestException(
+        "l'email existe déjà dans la liste des emails de l'utilisateur.",
       );
     }
     user.emails?.push(email);
@@ -92,15 +90,20 @@ export class EmailService {
       );
     }
 
+    const userEmails = await this.emailRepository.findBy({
+      userId: Equal(userId),
+    });
+
     // Trouver l'index de l'email à supprimer
-    const index = user.emails.findIndex((email) => email.id === emailId);
+    const index = userEmails?.findIndex((email) => email.id === emailId);
+
     // Si l'email n'est pas trouvé retourne une erreur
     if (index === -1) {
       throw new BadRequestException(
         "l'email n'existe pas dans la liste des emails de l'utilisateur.",
       );
     } else {
-      user.emails.splice(index, 1);
+      user.emails?.splice(index, 1);
     }
 
     // save updated user

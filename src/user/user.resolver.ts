@@ -43,10 +43,10 @@ export class UserResolver {
     @Parent() user: User,
     @Args() filters: EmailFiltersArgs,
   ): Promise<UserEmail[]> {
+    const userId = Equal(user.id);
     const where: FindOptionsWhere<EmailEntity>[] = [];
 
     if (filters.address) {
-      const userId = Equal(user.id);
       if (filters.address.equal) {
         where.push({
           userId,
@@ -63,7 +63,7 @@ export class UserResolver {
     }
 
     return this.emailRepository.find({
-      where,
+      where: where.length > 0 ? where : { userId },
       order: { address: 'asc' },
     });
   }

@@ -9,6 +9,7 @@ import { EmailEntity } from '../src/email/email.entity';
 import { Status } from '../src/user/user.interfaces';
 
 const knownUserId = '0f9fcea9-f618-44e5-b182-0e3c83586f8b';
+const knownUserId2 = '0f9fcea9-f618-44e5-b182-0e3c83586f22';
 
 const knownUser = {
   id: knownUserId,
@@ -33,6 +34,22 @@ const knownUser = {
     },
   ],
 };
+
+const knownUser2 = {
+  id: knownUserId2,
+  name: "Quelqu'un d'autre",
+  status: Status.ACTIVE,
+  birthdate: new Date(1989, 3, 8).toISOString(),
+  emails: [
+    {
+      userId: knownUserId2,
+      id: 'f7176922-9ae8-4ac7-b1d9-d6b8ed754444',
+      address: 'test4@upcse-integration.coop',
+    },
+  ],
+};
+
+const [email4] = knownUser2.emails;
 
 const [email1, email2, email3] = knownUser.emails;
 
@@ -60,6 +77,10 @@ describe('Tests e2e', () => {
     const { emails, ...user } = knownUser;
     await userRepo.insert(user);
     await emailRepo.insert(emails);
+
+    const { emails: newEmails, ...user2 } = knownUser2;
+    await userRepo.insert(user2);
+    await emailRepo.insert(newEmails);
 
     await app.init();
   });
@@ -261,6 +282,138 @@ describe('Tests e2e', () => {
           .expect((res) => {
             expect(res.body.errors?.[0]?.message).not.toBe('Not Implemented');
             expect(res.body.data?.emailsList[0].user.id).toBe(knownUserId);
+          });
+      });
+    });
+
+    describe('[Mutation] addEmailToUser', () => {
+      it(`[13] Devrait ajouter un email à l'utlisateur`, () => {
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: `mutation {addEmailToUser(email: { userId: "${email1.userId}", id: "${email1.id}", address: "${email1.address}" })}`,
+          })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.addEmailToUser).toBeDefined();
+          });
+      });
+
+      it(`[14] Devrait retourner une erreur de validation si le user id n'existe pas`, () => {
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: `mutation {addEmailToUser(email: { userId: "0f9fcea9-f618-44e5-b182-0e3c83586f88", id: "${email1.id}", address: "${email1.address}" })}`,
+          })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.errors?.[0]?.message).toContain(
+              "l'utilisateur n'est pas défini",
+            );
+          });
+      });
+
+      it(`[15] Devrait retourner une erreur de validation si l'email n'a pas un bon format`, () => {
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: `mutation {addEmailToUser(email: { userId: "${email1.userId}", id: "${email1.id}", address: "email@" })}`,
+          })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.errors?.[0]?.message).toContain(
+              'Une adresse e-mail doit être validée comme étant une adresse e-mail valide',
+            );
+          });
+      });
+
+      it(`[16] Devrait retourner une erreur si l'utlisateur est inactive`, async () => {
+        knownUser.status = Status.INACTIVE;
+        await userRepo.save(knownUser);
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: `mutation {addEmailToUser(email: { userId: "${email1.userId}", id: "${email1.id}", address: "${email1.address}" })}`,
+          })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.errors?.[0]?.message).toContain(
+              "L'utilisateur est inactif et ne peut pas être modifié.",
+            );
+          });
+      });
+    });
+
+    describe('[Mutation] deleteEmailFromUser', () => {
+      it(`[17] Devrait supprimer un email de l'utlisateur`, async () => {
+        knownUser.status = Status.ACTIVE;
+        await userRepo.save(knownUser);
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: `mutation {deleteEmailFromUser(userId: "${email1.userId}", emailId: "${email1.id}")}`,
+          })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.data.deleteEmailFromUser).toBeDefined();
+          });
+      });
+
+      it(`[18] Devrait retourner une erreur de validation si le user id n'existe pas`, () => {
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: `mutation {deleteEmailFromUser(userId: "0f9fcea9-f618-44e5-b182-0e3c83586f88", emailId: "${email1.id}")}`,
+          })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.errors?.[0]?.message).toContain(
+              "l'utilisateur ou l'email n'est pas défini",
+            );
+          });
+      });
+
+      it(`[19] Devrait retourner une erreur de validation si l'email id n'existe pas`, () => {
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: `mutation {deleteEmailFromUser(userId: "${email1.userId}", emailId: "f7176922-9ae8-4ac7-b1d9-d6b8ed754755")}`,
+          })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.errors?.[0]?.message).toContain(
+              "l'utilisateur ou l'email n'est pas défini",
+            );
+          });
+      });
+
+      it(`[20] Devrait retourner une erreur de validation si l'email n'existe pas dans les emails de l'utilisateur`, async () => {
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: `mutation {deleteEmailFromUser(userId: "${email1.userId}", emailId: "${email4.id}")}`,
+          })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.errors?.[0]?.message).toContain(
+              "l'email n'existe pas dans la liste des emails de l'utilisateur.",
+            );
+          });
+      });
+
+      it(`[21] Devrait retourner une erreur si l'utlisateur est inactive`, async () => {
+        knownUser.status = Status.INACTIVE;
+        await userRepo.save(knownUser);
+        return request(app.getHttpServer())
+          .post('/graphql')
+          .send({
+            query: `mutation {deleteEmailFromUser(userId: "${email1.userId}", emailId: "${email1.id}")}`,
+          })
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.errors?.[0]?.message).toContain(
+              "L'utilisateur est inactif et ne peut pas être modifié.",
+            );
           });
       });
     });
